@@ -1,0 +1,70 @@
+library(timeSeries)
+library(EnvStats)
+library(tseries)
+library(fit.models)
+library(FIT)
+library(forecast)
+library(plotly)
+
+# IMPORT FILE DATA
+data<- read.csv("multiTimeline.csv")
+dim(data)
+str(data)
+
+# Mengubah dalam bentuk time series / runtun waktu
+data1 <- as.ts(data)
+data1
+plot.ts(data1)
+
+# Uji stasioneritas Mean data
+adf.test(data1)
+
+# Uji stasioneritas Varians data
+BoxCox.lambda(data1)
+
+# Transformasi Data
+transformdata1 <- ((data1)^0.6588179) 
+transformdata1
+
+# Uji Stasioneritas Mean data ke-2
+adf.test(transformdata1)
+
+# Differencing data
+diff1 <- diff(transformdata1)
+
+# Uji Stasioneritas Mean Data Diff1
+adf.test(diff1)
+
+# Menentukan Order AR ARI IMA atau ARIMA
+# AR = PACF
+# MA = ACF
+
+acf(data1)
+pacf(data1)
+
+#Model yang memenuhi adalah model MA 1 karena hanya ada 1 data yang keluar batas
+
+# PEMODELAN IMA(0,1,1 )
+fit <- arima(data1, c(0,1,1))
+fit
+summary(fit)
+
+# UJI ASUMSI KENORMALAN RESIDUAL MODEL IMA(1,1)
+myresi <- fit$residuals
+myresi
+qqnorm(myresi)
+ks.test(myresi, ecdf(myresi)) # P-value >  0,05 = mendekati residual normal
+
+# UJI Ljung-Box or White noise
+fitLjungBox <- LjungBoxTest(myresi)
+
+Box.test(myresi, type = "Ljung-Box") 
+
+#P-value >  0,05 = memenuhi asumsi non autokorelasi atau model yang kita gunakan sudah white noise / Homoskedastisitas terpenuhi
+
+
+# PREDIKSI DARI MODEL IMA(1,1)
+predik <- forecast(fit, 5)
+predik
+plot<-ts.plot(data1,predik$pred)
+
